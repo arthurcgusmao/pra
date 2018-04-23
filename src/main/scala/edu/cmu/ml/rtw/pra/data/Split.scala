@@ -64,6 +64,18 @@ sealed abstract class Split[T <: Instance](
     }
   }
 
+  def zeroLinesInFile(foldStr: String, relation: String): Boolean = {
+    val fixedRelation = relation.replace("/", "_")
+    val dataFile = "/" + foldStr
+    val filename = directory + fixedRelation + dataFile
+    val lines = fileUtil.readLinesFromFile(filename)
+    if (lines.length == 0) {
+      return true
+    } else {
+      return false
+    }
+  }
+
   def readGraphString(graphString: String): GraphInMemory = {
     val graphBuilder = new GraphBuilder(outputter)
     val graphEdges = graphString.split(" ### ")
