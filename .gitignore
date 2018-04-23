@@ -6,3 +6,4 @@
 target/
 walkmanager.log
 /bin
+*.pyc

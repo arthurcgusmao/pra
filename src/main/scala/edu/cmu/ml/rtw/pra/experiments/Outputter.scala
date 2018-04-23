@@ -270,6 +270,34 @@ class Outputter(params: JValue, praBase: String, methodName: String, fileUtil: F
       writer.close()
     }
   }
+
+  // modified version of the function -- by @acg
+  def outputFoldFeatureMatrix(foldStr: String, matrix: FeatureMatrix, featureNames: Seq[String]) {
+    if (shouldOutputMatrices) {
+      // val trainingStr = if (isTraining) "training_matrix.tsv" else "test_matrix.tsv"
+      val filename = baseDir + relation + "/" + foldStr // foldStr is the name of the fold: train.tsv, test.tsv, valid.tsv, etc.
+      val writer = fileUtil.getFileWriter(filename)
+      for (row <- matrix.getRows().asScala) {
+        val key = row.instance match {
+          case npi: NodePairInstance => {
+            getNode(npi.source, npi.graph) + "," + getNode(npi.target, npi.graph)
+          }
+          case ni: NodeInstance => { getNode(ni.node, ni.graph) }
+        }
+        val positiveStr = if (row.instance.isPositive) "1" else "-1"
+        writer.write(key + "\t" + positiveStr + "\t")
+        for (i <- 0 until row.columns) {
+          val featureName = featureNames(row.featureTypes(i))
+          writer.write(featureName + "," + row.values(i))
+          if (i < row.columns - 1) {
+             writer.write(" -#- ")
+          }
+        }
+        writer.write("\n")
+      }
+      writer.close()
+    }
+  }
 }
 
 object Outputter {
