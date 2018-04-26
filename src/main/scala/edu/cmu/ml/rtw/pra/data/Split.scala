@@ -35,6 +35,17 @@ sealed abstract class Split[T <: Instance](
     readDatasetFile(filename, graph)
   }
 
+  // modified version of functions -- added by @acg
+  def getFoldData(foldStr: String, relation: String, graph: Option[Graph]) = loadFoldDataset(relation, graph, foldStr)
+
+  def loadFoldDataset(relation: String, graph: Option[Graph], foldStr: String): Dataset[T] = {
+    val fixedRelation = relation.replace("/", "_")
+    val dataFile = "/" + foldStr
+    val filename = directory + fixedRelation + dataFile
+    readDatasetFile(filename, graph)
+  }
+
+
   def readDatasetFile(filename: String, graph: Option[Graph]): Dataset[T] = {
     val lines = fileUtil.readLinesFromFile(filename)
     if (lines(0).split("\t").size == 4) {
@@ -50,6 +61,18 @@ sealed abstract class Split[T <: Instance](
       val g = graph.get
       val instances = lines.par.map(lineToInstance(g)).seq
       new Dataset[T](instances, fileUtil)
+    }
+  }
+
+  def zeroLinesInFile(foldStr: String, relation: String): Boolean = {
+    val fixedRelation = relation.replace("/", "_")
+    val dataFile = "/" + foldStr
+    val filename = directory + fixedRelation + dataFile
+    val lines = fileUtil.readLinesFromFile(filename)
+    if (lines.length == 0) {
+      return true
+    } else {
+      return false
     }
   }
 
@@ -169,4 +192,3 @@ object DatasetReader {
     split.readDatasetFile(filename, graph)
   }
 }
-
