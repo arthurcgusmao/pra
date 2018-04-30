@@ -12,18 +12,6 @@ from tools.feature_matrices import parse_feature_matrices
 from tools import dataset_tools
 
 
-columns = ['Relation', '# Triples Train', '# Triples Valid', '# Triples Test', '# Features', '# Relevant Features',
-           'Test Embedding Accuracy', 'Valid Embedding Accuracy', 'Train Embedding Accuracy',
-           'Test Positive Ratio', 'True Test Positive Ratio', 'Valid Positive Ratio', 'True Valid Positive Ratio', 'Train Positive Ratio', 'True Train Positive Ratio',
-           'Test Accuracy', 'True Test Accuracy', 'Valid Accuracy', 'True Valid Accuracy', 'Train Accuracy', 'True Train Accuracy',
-           'Test Precision', 'True Test Precision', 'Valid Precision', 'True Valid Precision', 'Train Precision', 'True Train Precision',
-           'Test Recall', 'True Test Recall', 'Valid Recall', 'True Valid Recall', 'Train Recall', 'True Train Recall',
-           'Test F1_score', 'True Test F1_score', 'Valid F1_score', 'True Valid F1_score', 'Train F1_score', 'True Train F1_score',
-           'l1_ratio', 'alpha'
-          ]
-complete_dataframe = pd.DataFrame(columns=columns)
-
-
 def get_target_relations(data_set_name):
     if data_set_name == 'NELL':
         data_path = '/home/ltd/openke/results/NELL186/TransE/1524632595/pra_explain/results/extract_feat__neg_by_random'
@@ -57,18 +45,9 @@ def get_reasons(row):
     return output
 
 
-def append_to_dataframe(row_dict):
-    global complete_dataframe
-    complete_dataframe = complete_dataframe.append(row_dict, ignore_index=True)
-
-
-def export_dataframe(filepath):
-    complete_dataframe.to_csv(filepath, index=False)
-
-
-
 class Explanator(object):
-    def __init__(self, target_relation, data_path, original_data_path, corrupted_data_path):
+    def __init__(self, complete_dataframe, target_relation, data_path, original_data_path, corrupted_data_path):
+        self.complete_dataframe = complete_dataframe
         self.target_relation = target_relation
         self.data_path = data_path
         self.original_data_path = original_data_path
@@ -78,6 +57,7 @@ class Explanator(object):
         self.test_exists = True
         self.stats = {}
         self.stats['Relation'] = target_relation
+
         # Define the model
         param_grid = [
             {'l1_ratio': [.1, .5, .7, .9, .95, .99, 1],
@@ -92,6 +72,14 @@ class Explanator(object):
         self.grid_search = GridSearchCV(model_definition, param_grid)
 
 
+    def append_to_dataframe(self):
+        self.complete_dataframe = self.complete_dataframe.append(self.stats, ignore_index=True)
+
+
+    def export_dataframe(self, filepath):
+        self.complete_dataframe.to_csv(filepath, mode='a', index=False, header=False)
+
+
     def extract_data(self):
         """ Extract data for the target relation from both the original and corrupted datasets """
         # Get original data
@@ -100,11 +88,10 @@ class Explanator(object):
         relation2id, id2relation = dataset_tools.read_name2id_file(os.path.join(original_data_path, 'relation2id.txt'))
 
         true_train = pd.read_csv(self.corrupted_data_path, sep=' ', skiprows=1, names=['e1', 'e2', 'rel', 'true_label'])
-        self.stats['# Triples Train'] = true_train.shape[0]
         true_valid = pd.read_csv(os.path.join(original_data_path, 'valid.txt'), sep='\t', skiprows=1, names=['head', 'rel_name', 'tail', 'true_label'])
-        self.stats['# Triples Valid'] = true_valid.shape[0]
+        self.stats['# Triples Valid'] = true_valid[true_valid['rel_name']==target_relation].shape[0]
         true_test = pd.read_csv(os.path.join(original_data_path, 'test.txt'), sep='\t', skiprows=1, names=['head', 'rel_name', 'tail', 'true_label'])
-        self.stats['# Triples Test'] = true_test.shape[0]
+        self.stats['# Triples Test'] = true_test[true_test['rel_name']==target_relation].shape[0]
 
         true_data = pd.concat([true_train, true_valid, true_test])
 
@@ -125,6 +112,7 @@ class Explanator(object):
         # true_valid['tail'] = true_valid['e2'].apply(apply_id2entity)
         # Training data
         true_train['rel_name'] = true_train['rel'].apply(apply_id2relation)
+        self.stats['# Triples Train'] = true_train[true_train['rel_name']==target_relation].shape[0]
         true_train['head'] = true_train['e1'].apply(apply_id2entity)
         true_train['tail'] = true_train['e2'].apply(apply_id2entity)
 
@@ -394,20 +382,36 @@ if __name__ == '__main__':
     # )
 
     # args = parser.parse_args()
+
+    columns = ['Relation', '# Triples Train', '# Triples Valid', '# Triples Test', '# Features', '# Relevant Features',
+               'Test Embedding Accuracy', 'Valid Embedding Accuracy', 'Train Embedding Accuracy',
+               'Test Positive Ratio', 'True Test Positive Ratio', 'Valid Positive Ratio', 'True Valid Positive Ratio', 'Train Positive Ratio', 'True Train Positive Ratio',
+               'Test Accuracy', 'True Test Accuracy', 'Valid Accuracy', 'True Valid Accuracy', 'Train Accuracy', 'True Train Accuracy',
+               'Test Precision', 'True Test Precision', 'Valid Precision', 'True Valid Precision', 'Train Precision', 'True Train Precision',
+               'Test Recall', 'True Test Recall', 'Valid Recall', 'True Valid Recall', 'Train Recall', 'True Train Recall',
+               'Test F1_score', 'True Test F1_score', 'Valid F1_score', 'True Valid F1_score', 'Train F1_score', 'True Train F1_score',
+               'l1_ratio', 'alpha'
+              ]
     
-    data_base_names = ['WN11']
+    data_base_names = ['NELL']
     for data_base_name in data_base_names:
+
+        # Export dataframe headers to csv
+        complete_dataframe = pd.DataFrame(columns=columns)
+        complete_dataframe.to_csv('/home/ltd/openke/analysis/' + data_base_name + '.csv', index=False)
+
         data_path, original_data_path, corrupted_data_path, target_relations = get_target_relations(data_base_name)
+
         for target_relation in target_relations:
             print("Training on " + target_relation + " relations")
-            exp = Explanator(target_relation, data_path, original_data_path, corrupted_data_path)
+            exp = Explanator(complete_dataframe, target_relation, data_path, original_data_path, corrupted_data_path)
             if exp.extract_data():
                 if exp.train():
                     exp.explain()
                     exp.report()
-                    append_to_dataframe(exp.stats)
+                    exp.append_to_dataframe()
+                    exp.export_dataframe('/home/ltd/openke/analysis/' + data_base_name + '.csv')
                 # exp.explain_per_example('test')
             else:
                 print("No test data for ", target_relation, " data")
-        export_dataframe('/home/ltd/openke/analysis/' + data_base_name + '.csv')
         
