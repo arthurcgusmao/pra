@@ -12,7 +12,7 @@ from tools.feature_matrices import parse_feature_matrices
 from tools import dataset_tools
 
 
-columns = ['Relation', '# Features', '# Relevant Features',
+columns = ['Relation', '# Triples Train', '# Triples Valid', '# Triples Test', '# Features', '# Relevant Features',
            'Test Embedding Accuracy', 'Valid Embedding Accuracy', 'Train Embedding Accuracy',
            'Test Positive Ratio', 'True Test Positive Ratio', 'Valid Positive Ratio', 'True Valid Positive Ratio', 'Train Positive Ratio', 'True Train Positive Ratio',
            'Test Accuracy', 'True Test Accuracy', 'Valid Accuracy', 'True Valid Accuracy', 'Train Accuracy', 'True Train Accuracy',
@@ -100,8 +100,11 @@ class Explanator(object):
         relation2id, id2relation = dataset_tools.read_name2id_file(os.path.join(original_data_path, 'relation2id.txt'))
 
         true_train = pd.read_csv(self.corrupted_data_path, sep=' ', skiprows=1, names=['e1', 'e2', 'rel', 'true_label'])
+        self.stats['# Triples Train'] = true_train.shape[0]
         true_valid = pd.read_csv(os.path.join(original_data_path, 'valid.txt'), sep='\t', skiprows=1, names=['head', 'rel_name', 'tail', 'true_label'])
+        self.stats['# Triples Valid'] = true_valid.shape[0]
         true_test = pd.read_csv(os.path.join(original_data_path, 'test.txt'), sep='\t', skiprows=1, names=['head', 'rel_name', 'tail', 'true_label'])
+        self.stats['# Triples Test'] = true_test.shape[0]
 
         true_data = pd.concat([true_train, true_valid, true_test])
 
@@ -392,7 +395,7 @@ if __name__ == '__main__':
 
     # args = parser.parse_args()
     
-    data_base_names = ['NELL']
+    data_base_names = ['WN11']
     for data_base_name in data_base_names:
         data_path, original_data_path, corrupted_data_path, target_relations = get_target_relations(data_base_name)
         for target_relation in target_relations:
