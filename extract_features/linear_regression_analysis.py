@@ -1,4 +1,5 @@
 from __future__ import division
+import argparse
 import pandas as pd
 import numpy as np
 import os
@@ -33,6 +34,11 @@ def get_target_relations(data_set_name):
         data_path = '/Users/Alvinho/openke/extract_feat__neg_by_random'
         original_data_path = '/home/ltd/openke/benchmarks/FB13'
         corrupted_data_path = '/home/ltd/openke/benchmarks/NELL186/corrupted/train2id_bern_5to1.txt'
+        return data_path, original_data_path, corrupted_data_path, os.listdir(data_path)
+    elif data_set_name == 'WN11':
+        data_path = '/home/ltd/openke/results/WN11/TransE/1524623630/pra_explain/results/extract_feat__neg_by_random'
+        original_data_path = '/home/ltd/openke/benchmarks/WN11'
+        corrupted_data_path = '/home/ltd/openke/benchmarks/WN11/corrupted/train2id_bern_2to1.txt'
         return data_path, original_data_path, corrupted_data_path, os.listdir(data_path)
 
 def get_reasons(row):
@@ -316,8 +322,8 @@ class Explanator(object):
         self.explanation = self.explanation.sort_values(by="scores", ascending=False)
         explanation = self.explanation[self.explanation['scores'] != 0]
         self.most_relevant_variables = pd.concat([explanation.iloc[0:10], explanation.iloc[-10:-1]])
-        self.stats['# Features'] = self.most_relevant_variables[self.most_relevant_variables['scores'] != 0].shape[0]
-        self.stats['# Relevant Features'] = self.most_relevant_variables.shape[0]
+        self.stats['# Features'] = self.explanation[self.explanation['scores'] != 0].shape[0]
+        self.stats['# Relevant Features'] = self.explanation.shape[0]
 
     def report(self):
         file_path = os.path.join(self.data_path, self.target_relation, self.target_relation + '_explained.txt')
@@ -374,6 +380,18 @@ class Explanator(object):
             f.write("\n" + str(self.model.get_params()))
 
 if __name__ == '__main__':
+    # parser = argparse.ArgumentParser()
+
+    # parser.add_argument(
+    #     '--output', '-o',
+    #     type=str,
+    #     default='stats',
+    #     help=''''stats' for relation statistics,
+    #     'per-example' for per-example explanations '''
+    # )
+
+    # args = parser.parse_args()
+    
     data_base_names = ['NELL']
     for data_base_name in data_base_names:
         data_path, original_data_path, corrupted_data_path, target_relations = get_target_relations(data_base_name)
@@ -385,8 +403,8 @@ if __name__ == '__main__':
                     exp.explain()
                     exp.report()
                     append_to_dataframe(exp.stats)
-                    export_dataframe('/home/ltd/openke/analysis/' + data_base_name + '.csv')
                 # exp.explain_per_example('test')
             else:
                 print("No test data for ", target_relation, " data")
+        export_dataframe('/home/ltd/openke/analysis/' + data_base_name + '.csv')
         
