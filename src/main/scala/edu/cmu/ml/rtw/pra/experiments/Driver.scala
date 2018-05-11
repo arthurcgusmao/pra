@@ -22,6 +22,8 @@ import scala.collection.mutable
 import org.json4s._
 import org.json4s.native.JsonMethods.{pretty,render,parse}
 
+import java.io.File
+
 // This class has two jobs.  This first is to create all of the necessary input files from the
 // parameter specification (e.g., create actual graph files from the relation sets that are
 // specified in the parameters).  This part just looks at the parameters and creates things on the
@@ -84,27 +86,36 @@ class Driver(
 
     val start_time = System.currentTimeMillis
 
+    var break_flag = false
     for (relation <- split.relations()) {
-      val relation_start = System.currentTimeMillis
-      outputter.info("\n\n\n\nRunning PRA for relation " + relation)
+      val relation_dir = outputter.baseDir + relation
+      if (new File(relation_dir).exists) {
+        println(s"Relation directory $relation_dir already exists. Skipping...")
+      } else if (break_flag) {
+        println(s"Relation $relation will only be processed in the next run. Skipping...")
+      } else {
+        val relation_start = System.currentTimeMillis
+        outputter.info("\n\n\n\nRunning PRA for relation " + relation)
 
-      outputter.setRelation(relation)
+        outputter.setRelation(relation)
 
-      operation.runRelation(relation)
+        operation.runRelation(relation)
 
-      val relation_end = System.currentTimeMillis
-      val millis = relation_end - relation_start
-      var seconds = (millis / 1000).toInt
-      val minutes = seconds / 60
-      seconds = seconds - minutes * 60
-      outputter.logToFile(s"Time for relation $relation: $minutes minutes and $seconds seconds\n")
+        val relation_end = System.currentTimeMillis
+        val millis = relation_end - relation_start
+        var seconds = (millis / 1000).toInt
+        val minutes = seconds / 60
+        seconds = seconds - minutes * 60
+        outputter.logToFile(s"Time for relation $relation: $minutes minutes and $seconds seconds\n")
+        break_flag = true
+      }
     }
     val end_time = System.currentTimeMillis
     val millis = end_time - start_time
     var seconds = (millis / 1000).toInt
     val minutes = seconds / 60
     seconds = seconds - minutes * 60
-    outputter.logToFile("PRA appears to have finished all relations successfully\n")
+    outputter.logToFile("PRA appears to have finished successfully\n")
     outputter.logToFile(s"Total time: $minutes minutes and $seconds seconds\n")
     outputter.info(s"Total time: $minutes minutes and $seconds seconds")
   }

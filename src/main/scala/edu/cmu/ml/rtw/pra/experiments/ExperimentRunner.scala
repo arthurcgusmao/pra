@@ -69,10 +69,10 @@ object ExperimentRunner {
     println(s"Running PRA from spec file $spec_file")
     val experiment = spec_file.getAbsolutePath().split(SPEC_DIR).last.replace(".json", "")
     val result_dir = result_base_dir + experiment
-    if (new File(result_dir).exists) {
-      println(s"Result directory $result_dir already exists. Skipping...")
-      return
-    }
+    // if (new File(result_dir).exists) {
+    //   println(s"Result directory $result_dir already exists. Skipping...")
+    //   return
+    // }
     new Driver(pra_base, experiment, params, fileUtil).runPipeline()
   }
 }
