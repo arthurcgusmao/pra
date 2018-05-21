@@ -266,25 +266,27 @@ class CreateMatrices[T <: Instance](
     // }
 
     // hardcoding things -- by @acg
-    val trainStr = "train.tsv"
-    if (!split.zeroLinesInFile(trainStr, relation)) {
-      val trainData = split.getFoldData(trainStr, relation, graph)
-      val trainMatrix = generator.createTrainingMatrix(trainData)
-      outputter.outputFoldFeatureMatrix(trainStr, trainMatrix, generator.getFeatureNames())
+    if (dataToUse == "training" || dataToUse == "both") {
+        val trainStr = "train.tsv"
+        if (!split.zeroLinesInFile(trainStr, relation)) {
+          val trainData = split.getFoldData(trainStr, relation, graph)
+          val trainMatrix = generator.createTrainingMatrix(trainData)
+          outputter.outputFoldFeatureMatrix(trainStr, trainMatrix, generator.getFeatureNames())
+        }
     }
-
-    val validStr = "valid.tsv"
-    if (!split.zeroLinesInFile(validStr, relation)) {
-      val validData = split.getFoldData(validStr, relation, graph)
-      val validMatrix = generator.createTestMatrix(validData)
-      outputter.outputFoldFeatureMatrix(validStr, validMatrix, generator.getFeatureNames())
-    }
-
-    val testStr = "test.tsv"
-    if (!split.zeroLinesInFile(testStr, relation)) {
-      val testData = split.getFoldData(testStr, relation, graph)
-      val testMatrix = generator.createTestMatrix(testData)
-      outputter.outputFoldFeatureMatrix(testStr, testMatrix, generator.getFeatureNames())
+    if (dataToUse == "testing" || dataToUse == "both") {
+        val validStr = "valid.tsv"
+        if (!split.zeroLinesInFile(validStr, relation)) {
+          val validData = split.getFoldData(validStr, relation, graph)
+          val validMatrix = generator.createTestMatrix(validData)
+          outputter.outputFoldFeatureMatrix(validStr, validMatrix, generator.getFeatureNames())
+        }
+        val testStr = "test.tsv"
+        if (!split.zeroLinesInFile(testStr, relation)) {
+          val testData = split.getFoldData(testStr, relation, graph)
+          val testMatrix = generator.createTestMatrix(testData)
+          outputter.outputFoldFeatureMatrix(testStr, testMatrix, generator.getFeatureNames())
+        }
     }
   }
 }
