@@ -87,11 +87,9 @@ class Driver(
     val start_time = System.currentTimeMillis
 
     var break_flag = false
-    for (relation <- split.relations()) {
-      val relation_dir = outputter.baseDir + relation
-      if (skipRelation(split, relation, relation_dir, params)) {
-        println(s"Skipping $relation...")
-      } else if (break_flag) {
+    for (relation <- split.relations(true)) {
+      // val relation_dir = outputter.baseDir + relation
+      if (break_flag) {
         println(s"Relation $relation will only be processed in the next run. Skipping...")
       } else {
         val relation_start = System.currentTimeMillis
@@ -119,54 +117,6 @@ class Driver(
     outputter.logToFile(s"Total time: $minutes minutes and $seconds seconds\n")
     outputter.info(s"Total time: $minutes minutes and $seconds seconds")
   }
-
-
-  def skipRelation(split: Split[T], relation: String, relation_dir: String, params: JValue): Boolean = {
-      val paramKeys = Seq("type", "features", "data")
-      val dataOptions = Seq("both", "training", "testing")
-      val data_to_use = JsonHelper.extractChoiceWithDefault(params, "data", dataOptions, "both")
-
-      var should_process_train = false
-      var should_process_valid = false
-      var should_process_test  = false
-      if (data_to_use == "training" || data_to_use == "both") {                   // check if data_to_use is training or both
-          if (!(zeroLinesInFile("train.tsv", relation))) {
-              should_process_train = true
-          }
-      }
-      if (data_to_use == "testing" || data_to_use == "both") {                   // check if data_to_use is training or both
-          if (!(split.zeroLinesInFile("valid.tsv", relation))) {
-              should_process_valid = true
-          }
-          if (!(split.zeroLinesInFile("test.tsv", relation))) {
-              should_process_test = true
-          }
-      }
-      // option to skip relation if there are no test files for the given relation (even if there is a training file)
-      if (data_to_use == "training only if testing") {
-          if (!(should_process_test)) {
-              return true
-          }
-      }
-      // check if relation should be skipped
-      if (new File(relation_dir).exists) {
-          if (should_process_train && !(new File(relation_dir + "/train.tsv").exists)) {
-              return false
-          }
-          if (should_process_valid && !(new File(relation_dir + "/valid.tsv").exists)) {
-              return false
-          }
-          if (should_process_test && !(new File(relation_dir + "/test.tsv").exists)) {
-              return false
-          }
-          return true
-          // it will skip the relation if:
-          // - there is a file that should be processed but is not in output dir, or
-          // - no file should be processed
-      }
-      return false
-  }
-
 
   def getGraphInput(graphParams: JValue): Set[(String, Option[Step])] = {
     var graphName = ""
