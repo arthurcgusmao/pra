@@ -9,6 +9,8 @@ import com.mattg.util.JsonHelper
 
 import org.json4s._
 
+import java.io.File
+
 sealed abstract class Split[T <: Instance](
   params: JValue,
   baseDir: String,
@@ -23,7 +25,54 @@ sealed abstract class Split[T <: Instance](
     case jval => s"${baseDir}splits/" + (jval \ "name").extract[String] + "/"
   }
 
-  def relations(): Seq[String] = fileUtil.readLinesFromFile(directory + "relations_to_run.tsv")
+  // modified function, by @acg
+  def relations(skipRelations: Boolean): Seq[String] = {
+    val relations = fileUtil.readLinesFromFile(directory + "relations_to_run.tsv")
+    if (!skipRelations) {
+      return relations
+    } else {
+      var output = Seq[String]()
+      for (relation <- relations) {
+        if (!skipRelation(relation)) {
+          output = output :+ relation
+        }
+      }
+      return output
+    }
+  }
+
+  // custom function, by @acg
+  def skipRelation(relation: String): Boolean = {
+    val relation_dir = outputter.baseDir + relation
+
+    val should_process_train = !zeroLinesInFile("train.tsv", relation)
+    val should_process_valid = !zeroLinesInFile("valid.tsv", relation)
+    val should_process_test  = !zeroLinesInFile("test.tsv" , relation)
+
+    // option to skip relation if there are no test files for the given relation (even if there is a training file)
+    if (true) { // @TODO: add option in the future
+      if (!should_process_test) {
+        return true
+      }
+    }
+    // check if relation should be skipped
+    if (new File(relation_dir).exists) {
+      if (should_process_train && !(new File(relation_dir + "/train.tsv").exists)) {
+        return false
+      }
+      if (should_process_valid && !(new File(relation_dir + "/valid.tsv").exists)) {
+        return false
+      }
+      if (should_process_test && !(new File(relation_dir + "/test.tsv").exists)) {
+        return false
+      }
+      return true
+      // it will skip the relation if:
+      // - there is a file that should be processed but is not in output dir, or
+      // - no file should be processed
+    }
+    return false
+  }
 
   def getTrainingData(relation: String, graph: Option[Graph]) = loadDataset(relation, graph, true)
   def getTestingData(relation: String, graph: Option[Graph]) = loadDataset(relation, graph, false)
@@ -192,3 +241,4 @@ object DatasetReader {
     split.readDatasetFile(filename, graph)
   }
 }
+

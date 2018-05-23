@@ -239,8 +239,8 @@ class CreateMatrices[T <: Instance](
   fileUtil: FileUtil
 ) extends Operation[T] {
   val paramKeys = Seq("type", "features", "data")
-  val dataOptions = Seq("both", "training", "testing")
-  val dataToUse = JsonHelper.extractChoiceWithDefault(params, "data", dataOptions, "both")
+  val dataOptions = Seq("allfolds", "onefold")
+  val dataToUse = JsonHelper.extractChoiceWithDefault(params, "data", dataOptions, "onefold")
 
   override def runRelation(relation: String) {
     outputter.info(s"Creating feature matrices for relation ${relation}; using data: ${dataToUse}")
@@ -266,27 +266,34 @@ class CreateMatrices[T <: Instance](
     // }
 
     // hardcoding things -- by @acg
-    if (dataToUse == "training" || dataToUse == "both") {
-        val trainStr = "train.tsv"
-        if (!split.zeroLinesInFile(trainStr, relation)) {
-          val trainData = split.getFoldData(trainStr, relation, graph)
-          val trainMatrix = generator.createTrainingMatrix(trainData)
-          outputter.outputFoldFeatureMatrix(trainStr, trainMatrix, generator.getFeatureNames())
-        }
+    var break_fold = false
+
+    if (dataToUse == "onefold" && !break_fold) {
+      val trainStr = "train.tsv"
+      if (!split.zeroLinesInFile(trainStr, relation)) {
+        val trainData = split.getFoldData(trainStr, relation, graph)
+        val trainMatrix = generator.createTrainingMatrix(trainData)
+        outputter.outputFoldFeatureMatrix(trainStr, trainMatrix, generator.getFeatureNames())
+        break_fold = true
+      }
     }
-    if (dataToUse == "testing" || dataToUse == "both") {
-        val validStr = "valid.tsv"
-        if (!split.zeroLinesInFile(validStr, relation)) {
-          val validData = split.getFoldData(validStr, relation, graph)
-          val validMatrix = generator.createTestMatrix(validData)
-          outputter.outputFoldFeatureMatrix(validStr, validMatrix, generator.getFeatureNames())
-        }
-        val testStr = "test.tsv"
-        if (!split.zeroLinesInFile(testStr, relation)) {
-          val testData = split.getFoldData(testStr, relation, graph)
-          val testMatrix = generator.createTestMatrix(testData)
-          outputter.outputFoldFeatureMatrix(testStr, testMatrix, generator.getFeatureNames())
-        }
+    if (dataToUse == "onefold" && !break_fold) {
+      val validStr = "valid.tsv"
+      if (!split.zeroLinesInFile(validStr, relation)) {
+        val validData = split.getFoldData(validStr, relation, graph)
+        val validMatrix = generator.createTestMatrix(validData)
+        outputter.outputFoldFeatureMatrix(validStr, validMatrix, generator.getFeatureNames())
+        break_fold = true
+      }
+    }
+    if (dataToUse == "onefold" && !break_fold) {
+      val testStr = "test.tsv"
+      if (!split.zeroLinesInFile(testStr, relation)) {
+        val testData = split.getFoldData(testStr, relation, graph)
+        val testMatrix = generator.createTestMatrix(testData)
+        outputter.outputFoldFeatureMatrix(testStr, testMatrix, generator.getFeatureNames())
+        break_fold = true
+      }
     }
   }
 }
@@ -378,3 +385,4 @@ class SgdTrainAndTest[T <: Instance](
     outputter.outputFeatureMatrix(false, testingMatrix, generator.getFeatureNames())
   }
 }
+
