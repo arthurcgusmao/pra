@@ -265,30 +265,32 @@ class CreateMatrices[T <: Instance](
     //   outputter.outputFeatureMatrix(false, testingMatrix, generator.getFeatureNames())
     // }
 
+
     // hardcoding things -- by @acg
     var break_fold = false
+    val relation_dir = outputter.baseDir + relation
 
-    if (dataToUse == "onefold" && !break_fold) {
+    if ((dataToUse == "onefold" && !break_fold) || dataToUse == "allfolds") {
       val trainStr = "train.tsv"
-      if (!split.zeroLinesInFile(trainStr, relation)) {
+      if ((!split.zeroLinesInFile(trainStr, relation)) && !(new File(relation_dir + "/" + trainStr).exists)) {
         val trainData = split.getFoldData(trainStr, relation, graph)
         val trainMatrix = generator.createTrainingMatrix(trainData)
         outputter.outputFoldFeatureMatrix(trainStr, trainMatrix, generator.getFeatureNames())
         break_fold = true
       }
     }
-    if (dataToUse == "onefold" && !break_fold) {
+    if ((dataToUse == "onefold" && !break_fold) || dataToUse == "allfolds") {
       val validStr = "valid.tsv"
-      if (!split.zeroLinesInFile(validStr, relation)) {
+      if ((!split.zeroLinesInFile(validStr, relation)) && !(new File(relation_dir + "/" + validStr).exists)) {
         val validData = split.getFoldData(validStr, relation, graph)
         val validMatrix = generator.createTestMatrix(validData)
         outputter.outputFoldFeatureMatrix(validStr, validMatrix, generator.getFeatureNames())
         break_fold = true
       }
     }
-    if (dataToUse == "onefold" && !break_fold) {
+    if ((dataToUse == "onefold" && !break_fold) || dataToUse == "allfolds") {
       val testStr = "test.tsv"
-      if (!split.zeroLinesInFile(testStr, relation)) {
+      if ((!split.zeroLinesInFile(testStr, relation)) && !(new File(relation_dir + "/" + testStr).exists)) {
         val testData = split.getFoldData(testStr, relation, graph)
         val testMatrix = generator.createTestMatrix(testData)
         outputter.outputFoldFeatureMatrix(testStr, testMatrix, generator.getFeatureNames())
@@ -385,4 +387,3 @@ class SgdTrainAndTest[T <: Instance](
     outputter.outputFeatureMatrix(false, testingMatrix, generator.getFeatureNames())
   }
 }
-
