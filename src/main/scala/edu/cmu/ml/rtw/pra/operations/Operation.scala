@@ -28,6 +28,8 @@ import scala.collection.mutable
 import org.json4s._
 import org.json4s.JsonDSL._
 
+import java.io.File
+
 trait Operation[T <: Instance] {
   def runRelation(relation: String)
 }
