@@ -113,7 +113,7 @@ abstract class SubgraphFeatureGenerator[T <: Instance](
 
   def extractFeatures(instance: T, subgraph: Subgraph): Option[MatrixRow] = {
     val features = featureExtractors.flatMap(_.extractFeatures(instance, subgraph))
-    if (features.size > 0) {
+    if (features.size > 0) { // (@acg NOTE): returns matrix row only if #features > 0
       Some(createMatrixRow(instance, features.toSet.map(featureToIndex).toSeq.sorted))
     } else {
       None
